@@ -78,6 +78,41 @@ Python 3.11.3
 
 脚本只使用 Python 标准库，不需要额外安装第三方依赖。
 
+## BAT 脚本说明
+
+本工具提供了两个批处理脚本，方便在 Windows 上双击运行，无需手动打开命令行。
+
+### 启动微信重复文件监控.bat
+
+双击即可在后台启动监控，脚本会自动完成以下工作：
+
+1. **检测重复运行** — 如果监控已在运行（通过 `duplicate_monitor.pid` 判断），会提示"Already running"并退出，避免启动多个实例。
+2. **自动查找 Python** — 优先查找 `pythonw.exe`（无控制台窗口），找不到则使用 `python.exe`（最小化窗口）。
+3. **以 move 模式启动** — 等价于执行 `python wechat_duplicate_monitor.py --action move`，重复文件会被移动到 `.duplicate_trash`。
+4. **记录 PID** — 进程 ID 写入 `duplicate_monitor.pid`，供关闭脚本使用。
+5. **重定向输出** — stdout 写入 `duplicate_monitor.stdout.log`，stderr 写入 `duplicate_monitor.stderr.log`，方便排查启动失败的原因。
+
+启动成功后，命令行窗口会自动关闭，监控在后台每 30 秒扫描一次。
+
+### 关闭微信重复文件监控.bat
+
+双击即可安全停止后台监控：
+
+1. **读取 PID 文件** — 从 `duplicate_monitor.pid` 获取正在运行的监控进程 ID。
+2. **校验进程身份** — 确认该 PID 对应的命令行确实是本监控脚本，防止误杀其他同名 PID 的进程。
+3. **停止进程并清理** — 终止进程后删除 PID 文件。
+4. **容错处理** — 如果 PID 文件不存在、进程已退出或 PID 无效，会给出相应提示并自动清理残留文件。
+
+### 相关文件
+
+| 文件 | 用途 |
+|------|------|
+| `启动微信重复文件监控.bat` | 启动后台监控 |
+| `关闭微信重复文件监控.bat` | 停止后台监控 |
+| `duplicate_monitor.pid` | 运行中的进程 ID（自动生成/清理） |
+| `duplicate_monitor.stdout.log` | 监控脚本的标准输出 |
+| `duplicate_monitor.stderr.log` | 监控脚本的错误输出 |
+
 ## 推荐使用流程
 
 强烈建议按下面顺序使用：
