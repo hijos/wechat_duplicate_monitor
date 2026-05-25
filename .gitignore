@@ -1,8 +1,15 @@
 # 日志文件
 duplicate_monitor.log
+duplicate_monitor_c.log
+duplicate_monitor_c.stdout.log
+duplicate_monitor_c.stderr.log
 
 # 进程 PID 文件
 duplicate_monitor.pid
+duplicate_monitor_c.pid
+
+# 编译产物
+*.exe
 
 # Python 缓存
 __pycache__/
