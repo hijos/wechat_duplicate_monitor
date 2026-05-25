@@ -1594,6 +1594,13 @@ static size_t find_last_bytes(const char *data, size_t length, const char *needl
     return (size_t)-1;
 }
 
+static size_t line_start_for_pos(const char *data, size_t pos) {
+    while (pos > 0 && data[pos - 1] != '\n') {
+        --pos;
+    }
+    return pos;
+}
+
 static void compact_log_file(const wchar_t *log_file) {
     HANDLE file = CreateFileW(log_file, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                               NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -1602,12 +1609,18 @@ static void compact_log_file(const wchar_t *log_file) {
     }
 
     LARGE_INTEGER size;
-    if (!GetFileSizeEx(file, &size) || size.QuadPart <= 0 || size.QuadPart > (LONGLONG)SIZE_MAX) {
+    if (!GetFileSizeEx(file, &size) || size.QuadPart <= 0) {
         CloseHandle(file);
         return;
     }
 
-    size_t length = (size_t)size.QuadPart;
+    uint64_t file_length = (uint64_t)size.QuadPart;
+    if (file_length > (uint64_t)SIZE_MAX || file_length > 0xffffffffULL) {
+        CloseHandle(file);
+        return;
+    }
+
+    size_t length = (size_t)file_length;
     char *content = (char *)xmalloc(length);
     DWORD bytes_read = 0;
     if (!ReadFile(file, content, (DWORD)length, &bytes_read, NULL) || bytes_read != (DWORD)length) {
@@ -1617,14 +1630,16 @@ static void compact_log_file(const wchar_t *log_file) {
     }
     CloseHandle(file);
 
-    int start_len_i = 0;
-    char *start_marker = wide_to_utf8(SCAN_START_MESSAGE, &start_len_i);
-    size_t latest_start = find_last_bytes(content, length, start_marker, (size_t)start_len_i);
-    if (latest_start == (size_t)-1) {
-        free(start_marker);
+    const char *scan_marker = "=====";
+    size_t latest_marker = find_last_bytes(content, length, scan_marker, strlen(scan_marker));
+    if (latest_marker == (size_t)-1) {
         free(content);
         return;
     }
+
+    size_t latest_marker_line = line_start_for_pos(content, latest_marker);
+    size_t previous_marker = latest_marker_line > 0 ? find_last_bytes(content, latest_marker_line, scan_marker, strlen(scan_marker)) : (size_t)-1;
+    size_t latest_scan_start = previous_marker == (size_t)-1 ? latest_marker_line : line_start_for_pos(content, previous_marker);
 
     char *keywords[sizeof(PERSISTENT_LOG_KEYWORDS) / sizeof(PERSISTENT_LOG_KEYWORDS[0])];
     int keyword_lengths[sizeof(PERSISTENT_LOG_KEYWORDS) / sizeof(PERSISTENT_LOG_KEYWORDS[0])];
@@ -1634,12 +1649,12 @@ static void compact_log_file(const wchar_t *log_file) {
 
     ByteBuffer output = {0};
     size_t line_start = 0;
-    while (line_start < latest_start) {
+    while (line_start < latest_scan_start) {
         size_t line_end = line_start;
-        while (line_end < latest_start && content[line_end] != '\n') {
+        while (line_end < latest_scan_start && content[line_end] != '\n') {
             ++line_end;
         }
-        if (line_end < latest_start) {
+        if (line_end < latest_scan_start) {
             ++line_end;
         }
 
@@ -1655,7 +1670,7 @@ static void compact_log_file(const wchar_t *log_file) {
         }
         line_start = line_end;
     }
-    byte_buffer_append(&output, content + latest_start, length - latest_start);
+    byte_buffer_append(&output, content + latest_scan_start, length - latest_scan_start);
 
     file = CreateFileW(log_file, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                        NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -1671,7 +1686,6 @@ static void compact_log_file(const wchar_t *log_file) {
         free(keywords[i]);
     }
     free(output.data);
-    free(start_marker);
     free(content);
 }
 

@@ -1,8 +1,5 @@
 # 日志文件
-duplicate_monitor.log
-duplicate_monitor_c.log
-duplicate_monitor_c.stdout.log
-duplicate_monitor_c.stderr.log
+duplicate_monitor*.log
 
 # 进程 PID 文件
 duplicate_monitor.pid
