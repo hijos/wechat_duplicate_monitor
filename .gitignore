@@ -8,8 +8,8 @@ duplicate_monitor_c.stderr.log
 duplicate_monitor.pid
 duplicate_monitor_c.pid
 
-# 编译产物
-*.exe
+# 编译产物（如需发布可移除下面这行）
+# *.exe
 
 # Python 缓存
 __pycache__/
