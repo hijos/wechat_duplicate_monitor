@@ -1,6 +1,6 @@
 # 微信文件重复清理监控脚本使用说明
 
-> 快速开始：将`wechat_duplicate_monitor`文件夹放置在微信默认文件接收目录（C:\Users\User-Name\Documents\xwechat_files\wxid_xxxxxxxxxx\msg\file\）下 ，然后运行`启动微信重复文件监控.bat`即可。
+> 快速开始：（保证本机已安装Python环境）将`wechat_duplicate_monitor`文件夹放置在微信默认文件接收目录（C:\Users\User-Name\Documents\xwechat_files\wxid_xxxxxxxxxx\msg\file\）下 ，然后运行`启动微信重复文件监控.bat`即可。
 
 本目录中的 `wechat_duplicate_monitor.py` 用于监测微信接收文件目录下的月份子文件夹，查找内容完全相同的重复文件，并只保留创建时间最早的一个文件。
 
